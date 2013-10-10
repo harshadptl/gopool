@@ -1,11 +1,11 @@
-# Gopool - A generic resource pool for golang
+# pool - A generic resource pool for golang
 
 ### Example Usage
 
 ```go
 package main
 
-import "gopool"
+import "pool"
 
 func main() {
   create := func() (interface{}) {
@@ -14,11 +14,12 @@ func main() {
   destroy := func(resource interface{}) {
     // clean up resource
   }
-  pool := gopool.Initialize(5, create, destroy) // create a pool of 5 resources
-  resource := pool.Acquire() // obtain the resource
+  // create a pool named "myDB" with min 5 and max 10 resources
+  rpool := pool.Initialize("myDB", 5, 10, create, destroy) 
+  resource := rpool.Acquire() // obtain the resource
   // use resource ...
-  pool.Release(resource) // return resource to the pool
-  pool.Drain() // free up all resources
+  rpool.Release(resource) // return resource to the pool
+  rpool.Drain() // free up all resources
 }
 ```
 
@@ -26,8 +27,5 @@ func main() {
 
 - Simple interface
 - Very little code
+- Lazy creation of resources (create resources when needed, but keep a min on hand)
 
-### Possible Future Features
-
-- Lazy creation of resources (only create resources when needed)
-- Ability to handle inability to create resources by periodically trying to create resources in a goroutine (example: allow an app to start up without a database connection then periodically attempt to create the database connections)
