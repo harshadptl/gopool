@@ -1,14 +1,14 @@
-// A generic resource pool
-package pool
+// A generic resource Pool
+package Pool
 
 import (
 	"sync"
 	"time"
 )
 
-var pools = make(map[string]*pool)
+var pools = make(map[string]*Pool)
 
-type pool struct {
+type Pool struct {
 	mx        sync.RWMutex
 	count     uint
 	inuse     uint
@@ -23,7 +23,7 @@ type pool struct {
  * Creates a new resource Pool
  */
 func Initialize(name string, min uint, max uint, create func() interface{}, destroy func(interface{})) {
-	p := new(pool)
+	p := new(Pool)
 	p.max = max
 	p.min = min
 	p.resources = make(chan interface{}, max)
@@ -37,7 +37,7 @@ func Initialize(name string, min uint, max uint, create func() interface{}, dest
 	pools[name] = p
 }
 
-func (p *pool) New() {
+func (p *Pool) New() {
 	p.mx.Lock()
 	p.count++
 	resource := p.create()
@@ -45,15 +45,15 @@ func (p *pool) New() {
 	p.mx.Unlock()
 }
 
-func Name(name string) (p *pool) {
+func Name(name string) (p *Pool) {
 	return pools[name]
 }
 
 /*
  * Obtain a resource from the Pool.
- * Returns nil if there are no more resources available (Set pool.max)
+ * Returns nil if there are no more resources available (Set Pool.max)
  */
-func (p *pool) Acquire() interface{} {
+func (p *Pool) Acquire() interface{} {
 Waiting:
 	p.mx.Lock()
 	defer p.mx.Unlock()
@@ -80,7 +80,7 @@ Waiting:
  * Obtain a resource from the Pool but only wait for a specified duration.
  * If the duration expires return nil.
  */
-func (p *pool) AcquireWithTimeout(timeout time.Duration) interface{} {
+func (p *Pool) AcquireWithTimeout(timeout time.Duration) interface{} {
 	var resource interface{}
 	select {
 	case resource = <-p.resources:
@@ -93,7 +93,7 @@ func (p *pool) AcquireWithTimeout(timeout time.Duration) interface{} {
 /*
  * Returns a resource back in to the Pool
  */
-func (p *pool) Release(resource interface{}) {
+func (p *Pool) Release(resource interface{}) {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 	if p.count-p.inuse > p.min {
@@ -109,7 +109,7 @@ func (p *pool) Release(resource interface{}) {
  * Remove a resource from the Pool.  This is helpful if the resource
  * has gone bad.  A new resource will be created in it's place.
  */
-func (p *pool) Destroy(resource interface{}) {
+func (p *Pool) Destroy(resource interface{}) {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 	p.destroy(resource)
@@ -121,7 +121,7 @@ func (p *pool) Destroy(resource interface{}) {
  * Remove all resources from the Pool and call the destroy method on each of
  * them.
  */
-func (p *pool) Drain() {
+func (p *Pool) Drain() {
 	for {
 		select {
 		case r := <-p.resources:
