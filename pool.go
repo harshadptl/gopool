@@ -1,5 +1,5 @@
 // A generic resource Pool
-package Pool
+package pool
 
 import (
 	"sync"
