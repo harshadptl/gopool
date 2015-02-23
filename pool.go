@@ -19,6 +19,21 @@ type Pool struct {
 	destroy   func(interface{})
 }
 
+func CreatePool(min uint, max uint, create func() interface{}, destroy func(interface{})) *Pool {
+	p := new(Pool)
+	p.max = max
+	p.min = min
+	p.resources = make(chan interface{}, max)
+	p.create = create
+	p.destroy = destroy
+	for i := uint(0); i < min; i++ {
+		p.count++
+		resource := p.create()
+		p.resources <- resource
+	}
+	return p
+}
+
 /*
  * Creates a new resource Pool
  */
@@ -133,4 +148,14 @@ func (p *Pool) Drain() {
 		}
 	}
 	close(p.resources)
+}
+
+func (p *Pool) TotalWorkers() uint {
+	c := p.count
+	return c
+}
+
+func (p *Pool) BusyWorkers() uint {
+	c := p.inuse
+	return c
 }
